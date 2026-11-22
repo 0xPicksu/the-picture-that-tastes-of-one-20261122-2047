@@ -1,22 +1,21 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import * as fs from "fs";
+import * as path from "path";
+import { fileURLToPath } from "url";
 
-// One egg, six and a half minutes.
-// Entrypoint copies the committed entry.png byte-for-byte to the output
-// directory. No generation happens here; the image is the entry itself.
-const outDir: string = process.env.OUTPUT_DIR || '/output';
-fs.mkdirSync(outDir, { recursive: true });
-const candidates: string[] = [path.join(process.cwd(), 'entry.png')];
-try {
-  const here: string = path.dirname(fileURLToPath(import.meta.url));
-  candidates.push(path.join(here, 'entry.png'));
-} catch {
-  // import.meta.url unavailable; cwd candidate above is sufficient.
-}
-const src: string | undefined = candidates.find((p: string) => fs.existsSync(p));
+const outDir = process.env.OUTPUT_DIR || "/output";
+const entryName = "entry.png";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+
+const candidates = [
+  path.join(process.cwd(), entryName),
+  path.join(here, entryName),
+];
+
+const src = candidates.find((p) => fs.existsSync(p));
 if (!src) {
-  throw new Error('entry.png not found next to main.ts or in the working directory');
+  throw new Error("entry.png not found next to main.ts or in the working directory");
 }
-const dest: string = path.join(outDir, 'entry.png');
-fs.copyFileSync(src, dest);
+
+fs.mkdirSync(outDir, { recursive: true });
+fs.copyFileSync(src, path.join(outDir, entryName));
