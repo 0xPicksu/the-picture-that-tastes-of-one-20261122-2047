@@ -1,20 +1,22 @@
-import { copyFileSync, existsSync, mkdirSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const here = dirname(fileURLToPath(import.meta.url));
-const source = resolve(here, "entry.png");
-const outDir = process.env.OUTPUT_DIR ?? "/output";
-const target = join(outDir, "entry.png");
-
-if (!existsSync(source)) {
-  throw new Error("entry.png not found next to main.ts");
+// One egg, six and a half minutes.
+// Entrypoint copies the committed entry.png byte-for-byte to the output
+// directory. No generation happens here; the image is the entry itself.
+const outDir: string = process.env.OUTPUT_DIR || '/output';
+fs.mkdirSync(outDir, { recursive: true });
+const candidates: string[] = [path.join(process.cwd(), 'entry.png')];
+try {
+  const here: string = path.dirname(fileURLToPath(import.meta.url));
+  candidates.push(path.join(here, 'entry.png'));
+} catch {
+  // import.meta.url unavailable; cwd candidate above is sufficient.
 }
-mkdirSync(outDir, { recursive: true });
-copyFileSync(source, target);
-const srcBytes = statSync(source).size;
-const dstBytes = statSync(target).size;
-if (srcBytes !== dstBytes) {
-  throw new Error(`size mismatch: source ${srcBytes} bytes, output ${dstBytes} bytes`);
+const src: string | undefined = candidates.find((p: string) => fs.existsSync(p));
+if (!src) {
+  throw new Error('entry.png not found next to main.ts or in the working directory');
 }
-console.log(`wrote ${target} (${dstBytes} bytes)`);
+const dest: string = path.join(outDir, 'entry.png');
+fs.copyFileSync(src, dest);
